@@ -27,7 +27,7 @@ function App() {
 			const response = await API.get("/check-auth");
 
 			// If the token incorrect
-			if (response.data.code === 404) {
+			if (response.data.status === "error") {
 				return dispatch({
 					type: "AUTH_ERROR",
 				});

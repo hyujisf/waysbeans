@@ -56,7 +56,7 @@ func (h *handlerProduct) AddProduct(c echo.Context) error {
 		Image:       dataFile,
 	}
 	request.Stock, _ = strconv.Atoi(c.FormValue("stock"))
-	request.Price, _ = strconv.Atoi(c.FormValue("price"))
+	request.Price, _ = strconv.ParseFloat(c.FormValue("price"), 64)
 
 	validation := validator.New()
 	err = validation.Struct(request)
