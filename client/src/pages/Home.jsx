@@ -23,6 +23,8 @@ const Home = () => {
 			}
 		}
 	);
+
+	document.title = "WaysBeans";
 	return (
 		<Layout className='max-w-screen-lg mx-auto'>
 			<>

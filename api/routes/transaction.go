@@ -13,11 +13,12 @@ func Transaction(e *echo.Group) {
 	transactionRepository := repositories.MakeRepository(sql.DB)
 	h := handlers.HandlerTransaction(transactionRepository)
 
-	e.GET("/transactions-admin", middleware.AdminAuth(h.FindTransactions))
-	e.GET("/transactions", middleware.Auth(h.FindTransactionsByUser))
-	e.GET("/transaction/{id}", middleware.Auth(h.GetDetailTransaction))
-	e.POST("/transaction", middleware.Auth(h.CreateTransaction))
-	e.PATCH("/transaction/{id}", middleware.Auth(h.UpdateTransactionStatus))
+	e.GET("/transactions", middleware.Auth(h.FindTransactions))
+	e.GET("/transaction/{id}", middleware.Auth(h.GetTransaction))
+	e.GET("/user-transaction", middleware.Auth(h.GetUserTransaction))
+	e.GET("/transaction", middleware.Auth(h.CreateTransaction))
+	e.PATCH("/transaction/", middleware.Auth(h.UpdateTransaction))
+	e.DELETE("/transaction/{id}", middleware.Auth(h.DeleteTransaction))
 
 	// membuat endpoint untuk midtrans
 	e.POST("/notification", h.Notification)

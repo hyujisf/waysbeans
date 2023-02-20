@@ -60,20 +60,23 @@ export default function Layouts(props) {
 
 									{state.user.role === "admin" ? (
 										<>
-											<Dropdown.Item
-												as={Link}
-												className='hover:bg-coffee-100 hover:text-coffee-400 font-medium'
-											>
-												<Link to={"/product_add"}>Add Product</Link>
-											</Dropdown.Item>
-											<Dropdown.Item className='hover:bg-coffee-100 hover:text-coffee-400 font-medium'>
-												<Link to={"/product_list"}>List Product</Link>
-											</Dropdown.Item>
+											<Link to={"/product_add"}>
+												<Dropdown.Item className='hover:bg-coffee-100 hover:text-coffee-400 font-medium'>
+													Add Product
+												</Dropdown.Item>
+											</Link>
+											<Link to={"/product_list"}>
+												<Dropdown.Item className='hover:bg-coffee-100 hover:text-coffee-400 font-medium'>
+													List Product
+												</Dropdown.Item>
+											</Link>
 										</>
 									) : (
-										<Dropdown.Item className='hover:bg-coffee-100 hover:text-coffee-400 font-medium'>
-											<Link to={"/profile"}>Profile</Link>
-										</Dropdown.Item>
+										<Link to={"/profile"}>
+											<Dropdown.Item className='hover:bg-coffee-100 hover:text-coffee-400 font-medium'>
+												Profile
+											</Dropdown.Item>
+										</Link>
 									)}
 
 									<Dropdown.Divider />

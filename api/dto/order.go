@@ -1,18 +1,23 @@
 package dto
 
-import "waysbeans/models"
-
-type AddOrderRequest struct {
-	ProductID int `json:"product_id"`
+type CreateOrder struct {
+	ID        int    `json:"id"`
+	UserID    int    `json:"user_id"`
+	ProductID int    `json:"product_id"`
+	QTY       int    `json:"qty"`
+	SubTotal  int    `json:"subtotal"`
+	Status    string `jsom:"status"`
 }
 
-type UpdateOrderRequest struct {
-	Event string `json:"event"`
-	Qty   int    `json:"qty"`
+type UpdateOrder struct {
+	ID       int    `json:"id"`
+	QTY      int    `json:"qty"`
+	SubTotal int    `json:"subtotal"`
+	Status   string `jsom:"status"`
 }
 
 type OrderResponse struct {
-	ID       int                    `json:"id"`
-	OrderQty int                    `json:"order_qty"`
-	Product  models.ProductResponse `json:"product"`
+	ID       int `json:"id"`
+	QTY      int `json:"qty"`
+	SubTotal int `json:"subtotal"`
 }

@@ -1,12 +1,13 @@
 import React, { useContext } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
-import { Button, Toast } from "flowbite-react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button } from "flowbite-react";
 import { useQuery, useMutation } from "react-query";
 
 import { API } from "@/lib/api";
 import Layout from "@/layouts/Default";
 import { toCurrency } from "@/lib/currency";
 import { AppContext } from "@/context/AppContext";
+import Toast from "@/lib/alert";
 
 const Detail = () => {
 	const { id } = useParams();
@@ -25,18 +26,30 @@ const Detail = () => {
 		}
 	);
 
-	const handleAddCart = useMutation(async () => {
+	const handleSubmit = async (e) => {
 		try {
-			const response = await API.post(`/order`, {
+			e.preventDefault();
+
+			const config = {
+				headers: {
+					"Content-type": "application/json",
+				},
+			};
+			const body = JSON.stringify({
 				product_id: parseInt(id),
+				qty: 1,
+				subtotal: product?.price,
 			});
-			if (response.data.status === "success") {
-				navigate("/cart");
-			}
-		} catch (e) {
-			console.log(e.response.data.message);
+			await API.post("/cart", body, config);
+			navigate("/cart");
+		} catch (error) {
+			console.log(error);
 		}
-	});
+	};
+
+	const title = "Product";
+	document.title = "WaysBeans | " + title;
+
 	return (
 		<Layout className='max-w-screen-lg mx-auto'>
 			<section className='h-full mt-6 lg:mt-32 lg:px-6'>
@@ -79,7 +92,7 @@ const Detail = () => {
 								onClick={() => {
 									if (state !== "" || state !== undefined) {
 										if (myCoffee?.stock !== 0) {
-											handleAddCart.mutate();
+											handleSubmit;
 										} else {
 											Toast.fire({
 												icon: "error",

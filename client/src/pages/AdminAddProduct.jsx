@@ -70,7 +70,7 @@ const AdminAddProduct = () => {
 	});
 
 	const title = "Add Product";
-	document.title = "Housy | " + title;
+	document.title = "WaysBeans | " + title;
 
 	return (
 		<Layout className='max-w-screen-lg mx-auto'>

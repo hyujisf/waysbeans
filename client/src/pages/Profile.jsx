@@ -39,6 +39,8 @@ const Profile = () => {
 			qty: "2",
 		},
 	];
+	const title = "Profile";
+	document.title = "WaysBeans | " + title;
 
 	return (
 		<Layout className='max-w-screen-xl mx-auto'>

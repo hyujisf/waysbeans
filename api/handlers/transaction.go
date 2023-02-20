@@ -13,6 +13,7 @@ import (
 	"waysbeans/models"
 	"waysbeans/repositories"
 
+	"github.com/go-mail/mail"
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/labstack/echo/v4"
@@ -37,293 +38,263 @@ func (h *handlerTransaction) FindTransactions(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, res)
 	}
 
-	res := dto.SuccessResult{Status: "success", Data: convertMultipleTransactionResponse(transactions)}
-	return c.JSON(http.StatusOK, res)
-}
-
-// mengambil seluruh data transaksi milik user tertentu
-func (h *handlerTransaction) FindTransactionsByUser(c echo.Context) error {
-	userInfo := c.Get("userInfo").(map[string]interface{})
-	idUser := int(userInfo["id"].(float64))
-
-	transactions, err := h.TransactionRepository.FindTransactionsByUser(idUser)
-	if err != nil {
-		res := dto.ErrorResult{Status: "error", Message: err.Error()}
-		return c.JSON(http.StatusNotFound, res)
-	}
-
-	res := dto.SuccessResult{Status: "success", Data: convertMultipleTransactionResponse(transactions)}
+	res := dto.SuccessResult{Status: "success", Data: transactions}
 	return c.JSON(http.StatusOK, res)
 }
 
 // mengambil 1 data transaksi
-func (h *handlerTransaction) GetDetailTransaction(c echo.Context) error {
-	id := c.Param("id")
+func (h *handlerTransaction) GetTransaction(c echo.Context) error {
 
+	id, _ := strconv.Atoi(c.Param("id"))
 	transaction, err := h.TransactionRepository.GetTransaction(id)
 	if err != nil {
 		res := dto.ErrorResult{Status: "error", Message: err.Error()}
 		return c.JSON(http.StatusNotFound, res)
 	}
 
-	res := dto.SuccessResult{Status: "success", Data: convertTransactionResponse(transaction)}
+	res := dto.SuccessResult{Status: "success", Data: transaction}
 	return c.JSON(http.StatusOK, res)
 }
 
-// membuat transaksi baru
+// mengambil seluruh data transaksi milik user tertentu
+func (h *handlerTransaction) GetUserTransaction(c echo.Context) error {
+	userLogin := c.Get("userLogin").(jwt.MapClaims)
+	id := int(userLogin["id"].(float64))
+
+	transaction, err := h.TransactionRepository.GetUserTransaction(id)
+	if err != nil {
+		res := dto.ErrorResult{Status: "error", Message: err.Error()}
+		return c.JSON(http.StatusNotFound, res)
+	}
+
+	res := dto.SuccessResult{Status: "success", Data: transaction}
+	return c.JSON(http.StatusOK, res)
+}
 func (h *handlerTransaction) CreateTransaction(c echo.Context) error {
-	var request dto.CreateTransactionRequest
-	if err := c.Bind(&request); err != nil {
+	userLogin := c.Get("userLogin").(jwt.MapClaims)
+	id := int(userLogin["id"].(float64))
+
+	request := new(dto.CreateTransaction)
+	if err := c.Bind(request); err != nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
 	}
 
-	userInfo := c.Get("userInfo").(jwt.MapClaims)
-	request.UserID = int(userInfo["id"].(float64))
-
-	validation := validator.New()
-	if err := validation.Struct(request); err != nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
-	}
-
-	newTransaction := models.Transaction{
-		ID:        fmt.Sprintf("TRX-%d-%d", request.UserID, timeIn("Asia/Jakarta").UnixNano()),
-		OrderDate: timeIn("Asia/Jakarta"),
-		Total:     request.Total,
-		Status:    "new",
-		UserID:    request.UserID,
-	}
-
-	for _, order := range request.Products {
-		newTransaction.Order = append(newTransaction.Order, models.OrderResponseForTransaction{
-			ID:        order.ID,
-			ProductID: order.ProductID,
-			OrderQty:  order.OrderQty,
-		})
-	}
-
-	transactionAdded, err := h.TransactionRepository.CreateTransaction(newTransaction)
+	validate := validator.New()
+	err := validate.Struct(request)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
 	}
 
-	transaction, err := h.TransactionRepository.GetTransaction(transactionAdded.ID)
+	order, err := h.TransactionRepository.FindOrdersTransactions(id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, dto.ErrorResult{Status: "error", Message: err.Error()})
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Status: "error", Message: err.Error()})
 	}
 
-	s := snap.Client{}
+	var transactionIsMatch = false
+	var transactionId int
+	for !transactionIsMatch {
+		transactionId = int(time.Now().Unix())
+		transactionData, _ := h.TransactionRepository.GetTransaction(transactionId)
+		if transactionData.ID == 0 {
+			transactionIsMatch = true
+		}
+	}
+
+	transaction := models.Transaction{
+		ID:     int64(transactionId),
+		UserID: id,
+		Total:  request.Total,
+		Status: "pending",
+		Order:  order,
+	}
+
+	data, err := h.TransactionRepository.CreateTransaction(transaction)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Status: "error", Message: err.Error()})
+	}
+
+	dataTransactions, err := h.TransactionRepository.GetTransactions(data.ID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	// Request payment token from midtrans ...
+	// 1. Initiate Snap client
+	var s = snap.Client{}
 	s.New(os.Getenv("SERVER_KEY"), midtrans.Sandbox)
+	// Use to midtrans.Production if you want Production Environment (accept real transaction).
 
+	// 2. Initiate Snap request param
 	req := &snap.Request{
 		TransactionDetails: midtrans.TransactionDetails{
-			OrderID:  transaction.ID,
-			GrossAmt: int64(transaction.Total),
+			OrderID:  strconv.Itoa(int(dataTransactions.ID)),
+			GrossAmt: int64(dataTransactions.Total),
 		},
 		CreditCard: &snap.CreditCardDetails{
 			Secure: true,
 		},
 		CustomerDetail: &midtrans.CustomerDetails{
-			FName: transaction.User.Name,
-			Phone: transaction.User.Phone,
-			BillAddr: &midtrans.CustomerAddress{
-				FName:    transaction.User.Name,
-				Phone:    transaction.User.Phone,
-				Address:  transaction.User.Address,
-				Postcode: transaction.User.PostCode,
-			},
-			ShipAddr: &midtrans.CustomerAddress{
-				FName:    transaction.User.Name,
-				Phone:    transaction.User.Phone,
-				Address:  transaction.User.Address,
-				Postcode: transaction.User.PostCode,
-			},
+			FName: dataTransactions.User.Name,
+			Email: dataTransactions.User.Email,
 		},
 	}
 
-	snapResp, _ := s.CreateTransactionToken(req)
+	// 3. Execute request create Snap transaction to Midtrans Snap API
+	snapResp, _ := s.CreateTransaction(req)
 
-	transaction, err = h.TransactionRepository.UpdateTokenTransaction(snapResp, transaction.ID)
-	if err != nil {
-		return c.JSON(http.StatusNotFound, dto.ErrorResult{Status: "error", Message: err.Error()})
-	}
-
-	return c.JSON(http.StatusCreated, dto.SuccessResult{Status: "success", Data: convertTransactionResponse(transaction)})
+	return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: snapResp})
 }
-func (h *handlerTransaction) UpdateTransactionStatus(c echo.Context) error {
-	id := c.Param("id")
-	var request dto.UpdateTransactionRequest
-	if err := c.Bind(&request); err != nil {
+func (h *handlerTransaction) UpdateTransaction(c echo.Context) error {
+	request := new(dto.UpdateTransaction)
+	if err := c.Bind(request); err != nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
 	}
 
-	fmt.Println("ID : ", id)
-	fmt.Println("Status : ", request.Status)
-
-	// memeriksa transaksi yang ingin diupdate
-	_, err := h.TransactionRepository.GetTransaction(id)
+	id, _ := strconv.Atoi(c.Param("id"))
+	transaction, err := h.TransactionRepository.GetTransaction(id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, dto.ErrorResult{Status: "error", Message: err.Error()})
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Status: "error", Message: err.Error()})
 	}
 
-	// mengupdate status transaksi
-	transaction, err := h.TransactionRepository.UpdateTransaction(request.Status, id)
+	if request.UserID != 0 {
+		transaction.UserID = request.UserID
+	}
+
+	if request.Total != 0 {
+		transaction.Total = request.Total
+	}
+
+	if request.Status != "" {
+		transaction.Status = request.Status
+	}
+
+	data, err := h.TransactionRepository.UpdateTransaction(transaction)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Status: "error", Message: err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: data})
+}
+func (h *handlerTransaction) DeleteTransaction(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	transaction, err := h.TransactionRepository.GetTransaction(id)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
 	}
 
-	// mengambil data transaksi yang sudah diupdate
-	transaction, err = h.TransactionRepository.GetTransaction(transaction.ID)
+	data, err := h.TransactionRepository.DeleteTransaction(transaction)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, dto.ErrorResult{Status: "error", Message: err.Error()})
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
 	}
 
-	var emailType string
-	switch request.Status {
-	case "rejected":
-		emailType = "Rejected"
-	case "sent":
-		emailType = "Success, Product On Delivery"
-	case "done":
-		emailType = "Success, Product Received"
-	default:
-		emailType = "Undefined"
-	}
-
-	go SendTransactionMail(emailType, transaction)
-
-	return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: convertTransactionResponse(transaction)})
+	return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: data})
 }
-
 func (h *handlerTransaction) Notification(c echo.Context) error {
-	// Initialize empty map for notification payload
 	var notificationPayload map[string]interface{}
 
-	// Parse JSON request body and set to payload
 	err := c.Bind(&notificationPayload)
 	if err != nil {
-		// Handle error when decoding payload
-		response := dto.ErrorResult{Status: "error", Message: err.Error()}
-		return c.JSON(http.StatusBadRequest, response)
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
 	}
 
-	// Get order ID from payload
-	orderID, exists := notificationPayload["order_id"].(string)
-	if !exists {
-		// Handle case when order ID key not found
-		return c.NoContent(http.StatusBadRequest)
-	}
+	transactionStatus := notificationPayload["transaction_status"].(string)
+	fraudStatus := notificationPayload["fraud_status"].(string)
+	orderId := notificationPayload["order_id"].(string)
 
-	// Get transaction from database using order ID
-	transaction, err := h.TransactionRepository.GetTransaction(orderID)
-	if err != nil {
-		// Handle case when transaction not found in database
-		fmt.Println("Transaction not found")
-		return c.NoContent(http.StatusOK)
-	}
+	transaction, _ := h.TransactionRepository.GetOneTransaction(orderId)
 
-	transactionStatus, exists := notificationPayload["transaction_status"].(string)
-	if !exists {
-		// Handle case when transaction status key not found
-		return c.NoContent(http.StatusBadRequest)
-	}
-
-	fraudStatus, _ := notificationPayload["fraud_status"].(string)
-
-	// Set transaction status based on response from check transaction status
 	switch transactionStatus {
 	case "capture":
 		switch fraudStatus {
 		case "challenge":
-			h.TransactionRepository.UpdateTransaction("pending", transaction.ID)
-			// TODO: Set transaction status on your database to 'challenge'
-			// e.g: 'Payment status challenged. Please take action on your Merchant Administration Portal'
+			// TODO set transaction status on your database to 'challenge'
+			// e.g: 'Payment status challenged. Please take action on your Merchant Administration Portal
+			h.TransactionRepository.UpdateTransactions("pending", orderId)
 		case "accept":
-			h.TransactionRepository.UpdateTransaction("success", transaction.ID)
-			SendTransactionMail("Success", transaction)
-			// TODO: Set transaction status on your database to 'success'
+			// TODO set transaction status on your database to 'success'
+			SendMail("success", transaction)
+			h.TransactionRepository.UpdateTransactions("success", orderId)
 		}
 	case "settlement":
-		h.TransactionRepository.UpdateTransaction("success", transaction.ID)
-		SendTransactionMail("Success", transaction)
-		// TODO: Set transaction status on your database to 'success'
+		// TODO set transaction status on your databaase to 'success'
+		SendMail("success", transaction)
+		h.TransactionRepository.UpdateTransactions("success", orderId)
 	case "deny":
-		h.TransactionRepository.UpdateTransaction("failed", transaction.ID)
-		// TODO: You can ignore 'deny', because most of the time it allows payment retries
+		// TODO you can ignore 'deny', because most of the time it allows payment retries
 		// and later can become success
+		SendMail("failed", transaction)
+		h.TransactionRepository.UpdateTransactions("failed", orderId)
 	case "cancel", "expire":
-		h.TransactionRepository.UpdateTransaction("failed", transaction.ID)
-		SendTransactionMail("Failed", transaction)
-		// TODO: Set transaction status on your database to 'failure'
+		// TODO set transaction status on your databaase to 'failure'
+		SendMail("failed", transaction)
+		h.TransactionRepository.UpdateTransactions("failed", orderId)
 	case "pending":
-		h.TransactionRepository.UpdateTransaction("pending", transaction.ID)
-		// TODO: Set transaction status on your database to 'pending' / waiting payment
+		// TODO set transaction status on your databaase to 'pending' / waiting payment
+		h.TransactionRepository.UpdateTransactions("pending", orderId)
 	}
 
 	return c.NoContent(http.StatusOK)
 }
 
-func convertMultipleTransactionResponse(transactions []models.Transaction) []dto.TransactionResponse {
-	var transactionsResponse []dto.TransactionResponse
-
-	for _, trx := range transactions {
-		var trxResponse = dto.TransactionResponse{
-			ID:         trx.ID,
-			MidtransID: trx.MidtransID,
-			OrderDate:  trx.OrderDate.Format("Monday, 2 January 2006"),
-			Total:      trx.Total,
-			Status:     trx.Status,
-			User:       trx.User,
-		}
-
-		for _, order := range trx.Order {
-			trxResponse.Products = append(trxResponse.Products, dto.ProductResponseForTransaction{
-				ID:          order.Product.ID,
-				Name:        order.Product.Name,
-				Price:       order.Product.Price,
-				Description: order.Product.Description,
-				Image:       order.Product.Image,
-				OrderQty:    order.OrderQty,
-			})
-		}
-
-		transactionsResponse = append(transactionsResponse, trxResponse)
-	}
-
-	return transactionsResponse
-}
-
-func convertTransactionResponse(transaction models.Transaction) dto.TransactionResponse {
-	var transactionResponse = dto.TransactionResponse{
-		ID:         transaction.ID,
-		MidtransID: transaction.MidtransID,
-		OrderDate:  transaction.OrderDate.Format("Monday, 2 January 2006"),
-		Total:      transaction.Total,
-		Status:     transaction.Status,
-		User:       transaction.User,
-	}
-
-	for _, order := range transaction.Order {
-		transactionResponse.Products = append(transactionResponse.Products, dto.ProductResponseForTransaction{
-			ID:          order.Product.ID,
-			Name:        order.Product.Name,
-			Price:       order.Product.Price,
-			Description: order.Product.Description,
-			Image:       order.Product.Image,
-			OrderQty:    order.OrderQty,
-		})
-	}
-
-	return transactionResponse
-}
-
 // fungsi untuk kirim email transaksi
+
+func SendMail(status string, transaction models.Transaction) {
+
+	if status != transaction.Status && (status == "success") {
+		var CONFIG_SMTP_HOST = "smtp.gmail.com"
+		var CONFIG_SMTP_PORT = 587
+		var CONFIG_SENDER_NAME = "WaysBeans <adefitryana007@gmail.com>"
+		var CONFIG_AUTH_EMAIL = os.Getenv("EMAIL_SYSTEM")
+		var CONFIG_AUTH_PASSWORD = os.Getenv("PASSWORD_SYSTEM")
+
+		var productName = "Thank For Purchasing Our Product"
+		var price = strconv.Itoa(transaction.Total)
+
+		dialer := mail.NewDialer(CONFIG_SMTP_HOST, CONFIG_SMTP_PORT, CONFIG_AUTH_EMAIL, CONFIG_AUTH_PASSWORD)
+		dialer.StartTLSPolicy = mail.MandatoryStartTLS
+
+		mailer := mail.NewMessage()
+		mailer.SetHeader("From", CONFIG_SENDER_NAME)
+		mailer.SetHeader("To", transaction.User.Email)
+		mailer.SetHeader("Subject", "Transaction Status")
+		mailer.SetBody("text/html", fmt.Sprintf(`<!DOCTYPE html>
+		  <html lang="en">
+			<head>
+			<meta charset="UTF-8" />
+			<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+			<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+			<title>Document</title>
+			<style>
+			  h1 {
+			  color: brown;
+			  }
+			</style>
+			</head>
+			<body>
+			<h2>Product payment :</h2>
+			<ul style="list-style-type:none;">
+			  <li> %s</li>
+			  <li>Total payment: Rp.%s</li>
+			  <li>Status : <b>%s</b></li>
+			</ul>
+			</body>
+		  </html>`, productName, price, status))
+
+		err := dialer.DialAndSend(mailer)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		log.Println("Mail sent! to " + transaction.User.Email)
+	}
+}
 func SendTransactionMail(status string, transaction models.Transaction) {
 
-	var CONFIG_SMTP_HOST = os.Getenv("CONFIG_SMTP_HOST")
-	var CONFIG_SMTP_PORT, _ = strconv.Atoi(os.Getenv("CONFIG_SMTP_PORT"))
-	var CONFIG_SENDER_NAME = os.Getenv("CONFIG_SENDER_NAME")
-	var CONFIG_AUTH_EMAIL = os.Getenv("CONFIG_AUTH_EMAIL")
-	var CONFIG_AUTH_PASSWORD = os.Getenv("CONFIG_AUTH_PASSWORD")
+	var CONFIG_SMTP_HOST = "smtp.gmail.com"
+	var CONFIG_SMTP_PORT = 587
+	var CONFIG_SENDER_NAME = "Waysbeans <canqalloid.me@gmail.com>"
+	var CONFIG_AUTH_EMAIL = os.Getenv("EMAIL_SYSTEM")
+	var CONFIG_AUTH_PASSWORD = os.Getenv("PASSWORD_SYSTEM")
 
 	var products []map[string]interface{}
 
@@ -331,8 +302,8 @@ func SendTransactionMail(status string, transaction models.Transaction) {
 		products = append(products, map[string]interface{}{
 			"ProductName": order.Product.Name,
 			"Price":       order.Product.Price,
-			"Qty":         order.OrderQty,
-			"SubTotal":    float64(order.OrderQty * int(order.Product.Price)),
+			"Qty":         order.QTY,
+			"SubTotal":    float64(order.QTY * int(order.Product.Price)),
 		})
 	}
 

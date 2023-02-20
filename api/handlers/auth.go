@@ -110,7 +110,7 @@ func (h *handlerAuth) Login(c echo.Context) error {
 }
 
 func (h *handlerAuth) CheckAuth(c echo.Context) error {
-	claims, ok := c.Get("userInfo").(jwt.MapClaims)
+	claims, ok := c.Get("userLogin").(jwt.MapClaims)
 	if !ok {
 		return echo.NewHTTPError(http.StatusUnauthorized, "invalid user information")
 	}

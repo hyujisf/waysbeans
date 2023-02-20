@@ -8,7 +8,7 @@ const initialState = {
 };
 
 const reducer = (state, action) => {
-	const { type, payload, status, isUser } = action;
+	const { type, payload } = action;
 
 	switch (type) {
 		case "SIGNIN":
@@ -17,28 +17,14 @@ const reducer = (state, action) => {
 				isLogin: true,
 				user: payload,
 			};
-		case `LOGOUT`:
+		case "LOGOUT":
 			localStorage.removeItem("token");
 			return {
 				isLogin: false,
 				user: {},
 			};
-		case `SEARCH`:
-			return {
-				isLogin: status,
-				user: isUser,
-				city: payload,
-			};
-		case `FILTER`:
-			return {
-				isLogin: status,
-				user: isUser,
-				filter: payload,
-			};
-
-		default: {
+		default:
 			throw new Error();
-		}
 	}
 };
 

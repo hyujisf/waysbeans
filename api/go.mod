@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/cloudinary/cloudinary-go v1.7.0
+	github.com/go-mail/mail v2.3.1+incompatible
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/golang-jwt/jwt/v4 v4.4.3
 	github.com/joho/godotenv v1.4.0
@@ -36,4 +37,5 @@ require (
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.2.0 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
+	gopkg.in/mail.v2 v2.3.1 // indirect
 )

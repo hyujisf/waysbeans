@@ -15,13 +15,16 @@ func Order(e *echo.Group) {
 	// find orders
 	e.GET("/orders", middleware.Auth(h.FindOrders))
 
-	// add order
-	e.POST("/order", middleware.Auth(h.CreateOrder))
-
 	// get 1 order
 	e.GET("/order/{id}", middleware.Auth(h.GetOrder))
 
+	// add order
+	e.POST("/order", middleware.Auth(h.CreateOrder))
+
+	e.GET("/Orders-id", middleware.Auth(h.FindOrdersByID))
+
 	// update order
+	e.PATCH("/order", middleware.Auth(h.UpdatesOrder))
 	e.PATCH("/order/{id}", middleware.Auth(h.UpdateOrder))
 
 	// delete order

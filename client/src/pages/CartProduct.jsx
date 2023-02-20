@@ -5,6 +5,8 @@ import { Button } from "flowbite-react";
 import Layout from "@/layouts/Default";
 
 const CartProduct = () => {
+	const title = "Cart";
+	document.title = "WaysBeans | " + title;
 	return (
 		<Layout className='max-w-screen-lg mx-auto'>
 			<section className='mt-32'>

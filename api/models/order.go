@@ -1,24 +1,29 @@
 package models
 
+import "time"
+
 type Order struct {
-	ID            int
-	UserID        int `gorm:"type: int"`
-	User          UserResponse
-	TransactionID string `gorm:"type: varchar(255)"`
-	Transaction   TransactionResponse
-	ProductID     int `gorm:"type: int"`
-	Product       ProductResponse
-	OrderQty      int `gorm:"type: int"`
+	ID        int             `json:"id" gorm:"primary_key:auto_increment"`
+	QTY       int             `json:"qty"`
+	SubTotal  int             `json:"subtotal"`
+	ProductID int             `json:"product_id" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Product   ProductResponse `json:"product" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	UserID    int             `json:"user_id"`
+	User      UserResponse    `json:"user"`
+	Status    string          `json:"status"`
+	CreatedAt time.Time       `json:"-"`
+	UpdatedAt time.Time       `json:"-"`
 }
 
-type OrderResponseForTransaction struct {
-	ID            int    `json:"-"`
-	TransactionID string `json:"-" gorm:"type: varchar(255)"`
-	ProductID     int    `json:"-"`
-	Product       ProductResponse
-	OrderQty      int `json:"orderQty" gorm:"type: int"`
+type OrderResponse struct {
+	ID        int             `json:"id"`
+	Qty       int             `json:"qty"`
+	SubTotal  int             `json:"subtotal"`
+	ProductID int             `json:"product_id"`
+	Product   ProductResponse `json:"product"`
+	Status    string          `json:"status"`
 }
 
-func (OrderResponseForTransaction) TableName() string {
+func (OrderResponse) TableName() string {
 	return "orders"
 }

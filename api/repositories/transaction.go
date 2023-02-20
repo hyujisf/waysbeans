@@ -1,97 +1,105 @@
 package repositories
 
-import "waysbeans/models"
+import (
+	"fmt"
+	"waysbeans/models"
+
+	"gorm.io/gorm"
+)
 
 type TransactionRepository interface {
 	FindTransactions() ([]models.Transaction, error)
-	FindTransactionsByUser(UserId int) ([]models.Transaction, error)
-	GetTransaction(ID string) (models.Transaction, error)
-	CreateTransaction(newTransaction models.Transaction) (models.Transaction, error)
-	UpdateTransaction(status string, trxId string) (models.Transaction, error)
-	UpdateTokenTransaction(token string, trxId string) (models.Transaction, error)
+	FindOrdersTransactions(TrxID int) ([]models.Order, error)
+	GetTransaction(ID int) (models.Transaction, error)
+	GetTransactions(ID int64) (models.Transaction, error)
+	GetUserTransaction(ID int) ([]models.Transaction, error)
+	GetOneTransaction(ID string) (models.Transaction, error)
+	CreateTransaction(transaction models.Transaction) (models.Transaction, error)
+	UpdateTransaction(transaction models.Transaction) (models.Transaction, error)
+	UpdateTransactions(status string, ID string) error
+	DeleteTransaction(transaction models.Transaction) (models.Transaction, error)
 }
 
-// mengambil semua transaksi
+func RepositoryTransaction(db *gorm.DB) *repository {
+	return &repository{db}
+}
 func (r *repository) FindTransactions() ([]models.Transaction, error) {
-	var transaction []models.Transaction
-	err := r.db.Preload("User").Preload("Order").Preload("Order.Product").Order("order_date desc").Find(&transaction).Error
-
-	return transaction, err
+	var transactions []models.Transaction
+	err := r.db.Preload("User").Find(&transactions).Error
+	return transactions, err
 }
 
-// mengambil semua transaksi berdasarkan user tertentu
-func (r *repository) FindTransactionsByUser(UserId int) ([]models.Transaction, error) {
-	var transaction []models.Transaction
-	err := r.db.Preload("User").Preload("Order").Preload("Order.Product").Where("user_id = ?", UserId).Order("order_date desc").Find(&transaction).Error
+func (r *repository) FindOrdersTransactions(TrxID int) ([]models.Order, error) {
+	var orders []models.Order
+	err := r.db.Preload("Product").Find(&orders, "user_id = ? AND status = ?", TrxID, "on").Error
 
-	return transaction, err
+	return orders, err
 }
 
-// mengambil 1 transaksi berdasarkan id
-func (r *repository) GetTransaction(ID string) (models.Transaction, error) {
+func (r *repository) GetTransaction(ID int) (models.Transaction, error) {
 	var transaction models.Transaction
-	err := r.db.Preload("User").Preload("Order").Preload("Order.Product").First(&transaction, "id = ?", ID).Error
+	err := r.db.Preload("User").Find(&transaction, ID).Error
+	return transaction, err
+}
+
+func (r *repository) GetTransactions(ID int64) (models.Transaction, error) {
+	var transaction models.Transaction
+	err := r.db.Preload("User").Find(&transaction, ID).Error
+	return transaction, err
+}
+
+func (r *repository) GetUserTransaction(ID int) ([]models.Transaction, error) {
+	var transaction []models.Transaction
+	err := r.db.Preload("User").Preload("Order").Preload("Order.Product").Debug().Find(&transaction, "user_id = ?", ID).Error
+	return transaction, err
+}
+
+func (r *repository) GetOneTransaction(ID string) (models.Transaction, error) {
+	var transaction models.Transaction
+	err := r.db.Preload("User").Preload("Product").First(&transaction, "id = ?", ID).Error
 
 	return transaction, err
 }
 
-// menambahkan transaksi baru
-func (r *repository) CreateTransaction(newTransaction models.Transaction) (models.Transaction, error) {
-	err := r.db.Create(&newTransaction).Error
+func (r *repository) CreateTransaction(transaction models.Transaction) (models.Transaction, error) {
+	err := r.db.Create(&transaction).Error
 
-	return newTransaction, err
+	return transaction, err
 }
 
-// mengupdate status transaksi berdasarkan id
-func (r *repository) UpdateTransaction(status string, trxId string) (models.Transaction, error) {
-	var transaction models.Transaction
-	r.db.Preload("User").Preload("Order").Preload("Order.Product").First(&transaction, "id = ?", trxId)
+func (r *repository) UpdateTransaction(transaction models.Transaction) (models.Transaction, error) {
+	err := r.db.Save(&transaction).Error
 
-	// If is different & Status is "success" decrement available quota on data trip
+	return transaction, err
+}
+
+func (r *repository) UpdateTransactions(status string, ID string) error {
+	var transaction models.Transaction
+	r.db.Preload("User").Preload("Product").First(&transaction, ID)
+	fmt.Println("===========", transaction)
+
+	// If is different & Status is "success" decrement product quantity
 	if status != transaction.Status && status == "success" {
-		for _, ordr := range transaction.Order {
+		var order []models.Order
+		r.db.Debug().Preload("Product").Find(&order, "user_id = ?", transaction.User.ID)
+
+		for _, p := range order {
+
 			var product models.Product
-			r.db.First(&product, ordr.Product.ID)
-			product.Stock = product.Stock - ordr.OrderQty
-			r.db.Model(&product).Updates(product)
+			r.db.First(&product, p.Product.ID)
+			product.Stock = product.Stock - p.QTY
+			r.db.Save(&product)
 		}
+
 	}
 
-	// If is different & Status is "reject" decrement available quota on data trip
-	if status != transaction.Status && status == "rejected" {
-		for _, ordr := range transaction.Order {
-			var product models.Product
-			r.db.First(&product, ordr.Product.ID)
-			product.Stock = product.Stock + ordr.OrderQty
-			r.db.Model(&product).Updates(product)
-		}
-	}
-
-	// change transaction status
 	transaction.Status = status
 
-	// fmt.Println(status)
-	// fmt.Println(transaction.Status)
-	// fmt.Println(transaction.ID)
+	err := r.db.Save(&transaction).Error
 
-	err := r.db.Model(&transaction).Updates(transaction).Error
-
-	return transaction, err
+	return err
 }
 
-// mengupdate token midtrans pada transaksi tertentu berdasarkan id
-func (r *repository) UpdateTokenTransaction(token string, trxId string) (models.Transaction, error) {
-	var transaction models.Transaction
-	r.db.Preload("User").Preload("Order").Preload("Order.Product").First(&transaction, "id = ?", trxId)
-
-	// change transaction token
-	transaction.MidtransID = token
-	err := r.db.Model(&transaction).Updates(transaction).Error
-
-	return transaction, err
-}
-
-// menghapus transaksi
 func (r *repository) DeleteTransaction(transaction models.Transaction) (models.Transaction, error) {
 	err := r.db.Delete(&transaction).Error
 

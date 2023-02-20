@@ -6,6 +6,7 @@ import { AppContext } from "@/context/AppContext";
 
 // Pages
 import * as Pages from "@/pages/index";
+import CustomerRoute from "@/components/PrivateRoutes/CustomerRoute";
 
 if (localStorage.token) {
 	setAuthToken(localStorage.token);
@@ -18,16 +19,13 @@ function App() {
 			setAuthToken(localStorage.token);
 		}
 	}, [state]);
-	// let navigate = useNavigate();
-	// console.clear();
-	console.log(state);
 
-	const checkAuth = async () => {
+	const checkUser = async () => {
 		try {
 			const response = await API.get("/check-auth");
 
 			// If the token incorrect
-			if (response.data.status === "error") {
+			if (response.status === 404) {
 				return dispatch({
 					type: "AUTH_ERROR",
 				});
@@ -49,20 +47,27 @@ function App() {
 	};
 
 	useEffect(() => {
-		if (localStorage.token) {
-			checkAuth();
-		}
+		checkUser();
 	}, []);
+
 	return (
 		<Routes>
-			<Route path='/' element={<Pages.Home />} />
-			<Route path='/detail/:id' element={<Pages.Detail />} />
-			<Route path='/profile' element={<Pages.Profile />} />
-			<Route path='/cart' element={<Pages.CartProduct />} />
-
-			<Route path='/' element={<Pages.AdminDashboard />} />
-			<Route path='/product_add' element={<Pages.AdminAddProduct />} />
-			<Route path='/product_list' element={<Pages.AdminListProduct />} />
+			{state.isLogin === true && state.user.role === "admin" ? (
+				<>
+					<Route path='/' element={<Pages.AdminDashboard />} />
+					<Route path='/product_add' element={<Pages.AdminAddProduct />} />
+					<Route path='/product_list' element={<Pages.AdminListProduct />} />
+				</>
+			) : (
+				<>
+					<Route path='/' element={<Pages.Home />} />
+					<Route path='/detail/:id' element={<Pages.Detail />} />
+					<Route path='/' element={<CustomerRoute />}>
+						<Route path='/profile' element={<Pages.Profile />} />
+						<Route path='/cart' element={<Pages.CartProduct />} />
+					</Route>
+				</>
+			)}
 		</Routes>
 	);
 }
