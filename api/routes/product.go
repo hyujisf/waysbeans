@@ -20,7 +20,7 @@ func ProductRoutes(e *echo.Group) {
 	e.GET("/product/:id", h.GetProduct)
 
 	// menambahkan product
-	e.POST("/product", middleware.AdminAuth(middleware.UploadFile(h.AddProduct)))
+	e.POST("/product", middleware.Auth(middleware.UploadFile(h.AddProduct)))
 	// e.DELETE("/product/:id", middleware.Auth(h.DeleteProduct))
 	// e.PATCH("/product/:id", middleware.Auth(middleware.UploadFile(h.UpdateProduct)))
 }
