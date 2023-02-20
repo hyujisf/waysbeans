@@ -1,57 +1,62 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { useParams } from "react-router-dom";
-import { Button } from "flowbite-react";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { Button, Toast } from "flowbite-react";
+import { useQuery } from "react-query";
 
+import { API } from "@/lib/api";
 import Layout from "@/layouts/Default";
+import { toCurrency } from "@/lib/currency";
 
 const Detail = () => {
 	const { id } = useParams();
-	const coffeeData = [
-		{
-			img: "/uploads/product1.png",
-			name: "RWANDA Beans",
-			price: "Rp. 299.000",
-			stock: "200",
-		},
-		{
-			img: "/uploads/product2.png",
-			name: "RWANDA Beans",
-			price: "Rp. 299.000",
-			stock: "200",
-		},
-		{
-			img: "/uploads/product3.png",
-			name: "RWANDA Beans",
-			price: "Rp. 299.000",
-			stock: "200",
-		},
-		{
-			img: "/uploads/product4.png",
-			name: "RWANDA Beans",
-			price: "Rp. 299.000",
-			stock: "200",
-		},
-	];
+	const navigate = useNavigate();
+	const [state, dispatch] = useContext(AppContext);
+
+	let { data: myCoffee, isLoading: myCoffeeLoading } = useQuery(
+		"getBookingCache",
+		async () => {
+			try {
+				const response = await API.get(`/product/${id}`);
+				return response.data.data;
+			} catch (e) {
+				console.log(e);
+			}
+		}
+	);
+
+	const handleAddCart = useMutation(async () => {
+		try {
+			const response = await API.post(`/order`, {
+				product_id: parseInt(id),
+			});
+			if (response.data.status === "success") {
+				navigate("/cart");
+			}
+		} catch (e) {
+			console.log(e.response.data.message);
+		}
+	});
 	return (
 		<Layout className='max-w-screen-lg mx-auto'>
-			<>
-				<section className='h-full mt-6 lg:mt-32 lg:px-6'>
+			<section className='h-full mt-6 lg:mt-32 lg:px-6'>
+				{myCoffeeLoading ? (
+					<div className='flex h-[50vh] w-full items-center justify-center'>
+						<b className='text-3xl'>Loading Your Product</b>
+					</div>
+				) : (
 					<div className='flex flex-col lg:flex-row my-auto'>
 						<div className='lg:w-[46rem]'>
 							<img
-								src={coffeeData[id].img}
+								src={myCoffee?.image}
 								className={"object-cover object-center h-full w-full"}
 								alt=''
 							/>
 						</div>
-						<div className='w-full p-12'>
+						<div className='w-full p-6 md:p-12'>
 							<h1 className='text-5xl font-bold text-coffee-400'>
-								{coffeeData[id].name}
+								{myCoffee?.name}
 							</h1>
-							<p className='mt-3 text-coffee-300'>
-								Stock {coffeeData[id].stock}
-							</p>
+							<p className='mt-3 text-coffee-300'>Stock {myCoffee?.stock}</p>
 							<p className='text-justify mt-8'>
 								Lorem ipsum dolor sit amet consectetur adipisicing elit. Iusto
 								accusamus atque suscipit placeat architecto! Asperiores harum
@@ -63,20 +68,37 @@ const Detail = () => {
 								dicta eos!
 							</p>
 							<p className='text-right text-3xl mt-8 mb-12 font-bold text-coffee-300'>
-								{coffeeData[id].price}
+								{toCurrency(myCoffee?.price)}
 							</p>
 
 							<Button
 								type='button'
 								size={"lg"}
 								className='bg-coffee-400 hover:bg-transparent border-2 !border-coffee-400 text-white hover:text-coffee-400 px-4 py-0 font-semibold transition-all !w-full md:w-auto'
+								onClick={() => {
+									if (state !== "" || state !== undefined) {
+										if (myCoffee?.stock !== 0) {
+											handleAddCart.mutate();
+										} else {
+											Toast.fire({
+												icon: "error",
+												title: "Product out of stock",
+											});
+										}
+									} else {
+										Toast.fire({
+											icon: "error",
+											title: "You must be logged in to continue !",
+										});
+									}
+								}}
 							>
 								Add Cart
 							</Button>
 						</div>
 					</div>
-				</section>
-			</>
+				)}
+			</section>
 		</Layout>
 	);
 };

@@ -4,6 +4,7 @@ import { Card } from "flowbite-react";
 import { useQuery } from "react-query";
 
 import { API } from "@/lib/api";
+import { toCurrency } from "@/lib/currency";
 import { AppContext } from "@/context/AppContext";
 import Layout from "@/layouts/Default";
 
@@ -11,7 +12,7 @@ const Home = () => {
 	const navigate = useNavigate();
 	const [state, dispatch] = useContext(AppContext);
 
-	const { data: productData, isisLoading: productDataIsLoading } = useQuery(
+	const { data: productData, isLoading: productDataIsLoading } = useQuery(
 		"productDataCache",
 		async (e) => {
 			try {
@@ -54,7 +55,11 @@ const Home = () => {
 					</div>
 				</section>
 				<section className=''>
-					{productData === null ? (
+					{productDataIsLoading ? (
+						<div className='flex h-[20rem] w-full items-center justify-center'>
+							<b className='text-3xl'>Loading Your Product</b>
+						</div>
+					) : productData === "" || productData === undefined ? (
 						state.user.role === "admin" ? (
 							<>
 								<div className='flex h-[20rem] w-full items-center justify-center'>
@@ -78,7 +83,7 @@ const Home = () => {
 							{productData?.map((data) => (
 								<div
 									key={data.id}
-									className='bg-coffee-100'
+									className='bg-coffee-100 cursor-pointer hover:bg-coffee-200 transition-all'
 									onClick={() => {
 										navigate(`/detail/${data.id}`);
 									}}
@@ -89,7 +94,7 @@ const Home = () => {
 											{data.name}
 										</h5>
 										<p className='font-normal text-coffee-300'>
-											{data.price} <br />
+											{toCurrency(data.price)} <br />
 											Stock : {data.stock}
 										</p>
 									</div>

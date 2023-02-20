@@ -45,8 +45,8 @@ const Login = ({ loginModal, setLoginModal, setRegisterModal }) => {
 				});
 				navigate("/");
 				Toast.fire({
-					icon: response.data.status,
-					title: response.data.message,
+					icon: "success",
+					title: "Successfully Sign In",
 				});
 			}
 			e.target.reset();

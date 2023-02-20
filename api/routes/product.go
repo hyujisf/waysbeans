@@ -10,7 +10,7 @@ import (
 )
 
 func ProductRoutes(e *echo.Group) {
-	productRepository := repositories.RepositoryProduct(sql.DB)
+	productRepository := repositories.MakeRepository(sql.DB)
 	h := handlers.HandlerProduct(productRepository)
 
 	// mengambil semua data product
