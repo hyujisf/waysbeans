@@ -10,6 +10,7 @@ import { setAuthToken } from "@/lib/api";
 
 import Login from "@/components/Auth/Login";
 import Register from "@/components/Auth/Register";
+import Swal from "sweetalert2";
 
 if (localStorage.token) {
 	setAuthToken(localStorage.token);
@@ -22,13 +23,24 @@ export default function Layouts(props) {
 	const navigate = useNavigate();
 
 	const isLogout = () => {
-		dispatch({
-			type: "LOGOUT",
-		});
 		navigate("/");
-		Toast.fire({
+		Swal.fire({
 			icon: "success",
-			title: "Logout Success, Bye👋",
+			title: "Do you want to logout?",
+			confirmButtonText: "Yes, logout",
+			cancelButtonText: "No, Not now!",
+			showCancelButton: true,
+			confirmButtonColor: "#d33",
+			cancelButtonColor: "rgb(97 61 43)",
+		}).then((result) => {
+			/* Read more about isConfirmed, isDenied below */
+			if (result.isConfirmed) {
+				Swal.fire("Sampai Jumpa!", "", "success");
+
+				dispatch({
+					type: "LOGOUT",
+				});
+			}
 		});
 	};
 	return (
@@ -37,7 +49,15 @@ export default function Layouts(props) {
 				<Header className={"fixed w-full shadow-lg z-30"}>
 					<Navbar.Collapse className='p-1 !rounded-lg md:flex place-items-center'>
 						{state.isLogin === true ? (
-							<div className='flex md:flex-none justify-end pb-4 md:pb-0'>
+							<div className='flex md:flex-none items-center justify-end pb-4 md:pb-0 gap-8'>
+								{state.user.role !== "admin" ? (
+									<Link
+										to={"/cart"}
+										className='rounded-full hover:bg-coffee-100 p-3 transition-all duration-200'
+									>
+										<img src='/img/basket.svg' width={25} alt='' />
+									</Link>
+								) : null}
 								<Dropdown
 									arrowIcon={false}
 									inline={true}
