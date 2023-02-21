@@ -61,7 +61,7 @@ const Home = () => {
 						<div className='flex h-[20rem] w-full items-center justify-center'>
 							<b className='text-3xl'>Loading Your Product</b>
 						</div>
-					) : productData === "" || productData === undefined ? (
+					) : productData === null || productData === undefined ? (
 						state.user.role === "admin" ? (
 							<>
 								<div className='flex h-[20rem] w-full items-center justify-center'>

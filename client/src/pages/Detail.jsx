@@ -26,7 +26,7 @@ const Detail = () => {
 		}
 	);
 
-	const handleSubmit = async (e) => {
+	const handleSubmit = useMutation(async (e) => {
 		try {
 			e.preventDefault();
 
@@ -38,14 +38,14 @@ const Detail = () => {
 			const body = JSON.stringify({
 				product_id: parseInt(id),
 				qty: 1,
-				subtotal: product?.price,
+				sub_total: product?.price,
 			});
 			await API.post("/order", body, config);
 			navigate("/cart");
 		} catch (error) {
 			console.log(error);
 		}
-	};
+	});
 
 	const title = "Product";
 	document.title = "WaysBeans | " + title;
@@ -82,7 +82,7 @@ const Detail = () => {
 									type='button'
 									size={"lg"}
 									className='bg-coffee-400 hover:bg-transparent border-2 !border-coffee-400 text-white hover:text-coffee-400 px-4 py-0 font-semibold transition-all !w-full md:w-auto'
-									onClick={handleSubmit}
+									onClick={(e) => handleSubmit.mutate(e)}
 								>
 									Add Cart
 								</Button>

@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { IoMdTrash } from "react-icons/io";
 import { Button } from "flowbite-react";
 
 import Layout from "@/layouts/Default";
+import { toCurrency } from "@/lib/currency";
 
 const CartProduct = () => {
+	const [qty, setQty] = useState(1);
+
 	const title = "Cart";
 	document.title = "WaysBeans | " + title;
 	return (
@@ -29,13 +32,13 @@ const CartProduct = () => {
 								<td className='w-full'>
 									<h4 className='mb-3 font-semibold'>GUETEMALA Beans</h4>
 									<div>
-										<button>-</button>
+										<button onClick={() => setQty((qty) => qty - 1)}>-</button>
 										<input
 											type='text'
-											value={2}
+											value={qty}
 											className='w-10 h-6 p-0 text-center mx-2 bg-coffee-100 rounded-lg border-0'
 										/>
-										<button>+</button>
+										<button onClick={() => setQty((qty) => qty + 1)}>+</button>
 									</div>
 								</td>
 								<td className='text-right'>
@@ -55,11 +58,11 @@ const CartProduct = () => {
 							</tr>
 							<tr>
 								<td>Qty</td>
-								<td className='text-right'>2</td>
+								<td className='text-right'>{qty}</td>
 							</tr>
 							<tr className='border-t border-x-0 border-t-coffee-400 text-coffee-250 font-semibold'>
 								<td>Total</td>
-								<td className='text-right'>300.900</td>
+								<td className='text-right'> {toCurrency(qty * 300900)}</td>
 							</tr>
 						</table>
 						<div className='flex justify-end'>
