@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func Transaction(e *echo.Group) {
+func TransactionRoutes(e *echo.Group) {
 	transactionRepository := repositories.MakeRepository(sql.DB)
 	h := handlers.HandlerTransaction(transactionRepository)
 

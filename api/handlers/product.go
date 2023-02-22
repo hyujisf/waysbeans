@@ -26,7 +26,7 @@ func (h *handlerProduct) FindProducts(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Status: "error", Message: err.Error()})
 	}
-
+	fmt.Println(c)
 	return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: convertMultipleProductResponse(products)})
 }
 

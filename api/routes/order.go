@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func Order(e *echo.Group) {
+func OrderRoutes(e *echo.Group) {
 	orderRepository := repositories.MakeRepository(sql.DB)
 	h := handlers.HandlerOrder(orderRepository)
 	// find orders
