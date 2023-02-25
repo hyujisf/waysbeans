@@ -23,7 +23,6 @@ export default function Layouts(props) {
 	const navigate = useNavigate();
 
 	const isLogout = () => {
-		navigate("/");
 		Swal.fire({
 			icon: "success",
 			title: "Do you want to logout?",
@@ -40,6 +39,7 @@ export default function Layouts(props) {
 				dispatch({
 					type: "LOGOUT",
 				});
+				navigate("/");
 			}
 		});
 	};
@@ -80,6 +80,11 @@ export default function Layouts(props) {
 
 									{state.user.role === "admin" ? (
 										<>
+											<Link to={"/"}>
+												<Dropdown.Item className='hover:bg-coffee-100 hover:text-coffee-400 font-medium'>
+													Transaction
+												</Dropdown.Item>
+											</Link>
 											<Link to={"/product_add"}>
 												<Dropdown.Item className='hover:bg-coffee-100 hover:text-coffee-400 font-medium'>
 													Add Product

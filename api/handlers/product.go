@@ -26,7 +26,6 @@ func (h *handlerProduct) FindProducts(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Status: "error", Message: err.Error()})
 	}
-	fmt.Println(c)
 	return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: convertMultipleProductResponse(products)})
 }
 
@@ -83,104 +82,82 @@ func (h *handlerProduct) AddProduct(c echo.Context) error {
 	return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: convertProductResponse(product)})
 }
 
-// func (h *handlerProduct) UpdateProduct(c echo.Context) error {
-// 	var err error
+func (h *handlerProduct) UpdateProduct(c echo.Context) error {
+	dataFile := c.Get("dataFile").(string)
 
-// 	id, _ := strconv.Atoi(c.Param("id"))
+	request := dto.UpdateProductRequest{
+		Name:        c.FormValue("name"),
+		Image:       dataFile,
+		Description: c.FormValue("description"),
+	}
+	request.Stock, _ = strconv.Atoi(c.FormValue("stock"))
+	request.Price, _ = strconv.ParseFloat(c.FormValue("price"), 64)
 
-// 	var categoriesId []int
-// 	categoryIdString := c.FormValue("category_id")
-// 	err = json.Unmarshal([]byte(categoryIdString), &categoriesId)
-// 	if err != nil {
-// 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
-// 	}
+	validation := validator.New()
+	err := validation.Struct(request)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Status: "error", Message: err.Error()})
+	}
 
-// 	request := dto.UpdateProductRequest{
-// 		Name:        c.FormValue("name"),
-// 		Description: c.FormValue("description"),
-// 		Image:       c.Get("image").(string),
-// 	}
-// 	request.Stock, _ = strconv.Atoi(c.FormValue("stock"))
-// 	request.Price, _ = strconv.Atoi(c.FormValue("price"))
+	id, _ := strconv.Atoi(c.Param("id"))
+	product, err := h.ProductRepository.GetProduct(int(id))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
+	}
 
-// 	updateProduct, err := h.ProductRepository.GetProduct(id)
-// 	if err != nil {
-// 		return c.JSON(http.StatusNotFound, dto.ErrorResult{
-// 			Status:  "error",
-// 			Message: err.Error(),
-// 		})
-// 	}
+	if request.Name != "" {
+		product.Name = request.Name
+	}
 
-// 	validation := validator.New()
-// 	err = validation.Struct(request)
-// 	if err != nil {
-// 		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Status: "error", Message: err.Error()})
-// 	}
+	if request.Price != 0 {
+		product.Price = request.Price
+	}
 
-// 	id, _ := strconv.Atoi(c.Param("id"))
+	if dataFile != "false" {
+		product.Image = request.Image
+	}
 
-// 	product, err := h.ProductRepository.GetProduct(id)
+	if request.Stock != 0 {
+		product.Stock = request.Stock
+	}
 
-// 	if err != nil {
-// 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
-// 	}
+	if request.Description != "" {
+		product.Description = request.Description
+	}
 
-// 	if request.Name != "" {
-// 		product.Name = request.Name
-// 	}
+	product, err = h.ProductRepository.UpdateProduct(product)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Status: "error", Message: err.Error()})
+	}
 
-// 	if request.Desc != "" {
-// 		product.Desc = request.Desc
-// 	}
+	return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: convertProductResponse(product)})
+}
+func (h *handlerProduct) DeleteProduct(c echo.Context) error {
+	id, _ := strconv.Atoi(c.Param("id"))
+	updateProduct, err := h.ProductRepository.GetProduct(id)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, dto.ErrorResult{
+			Status:  "error",
+			Message: err.Error(),
+		})
+	}
 
-// 	if request.Price != 0 {
-// 		product.Price = request.Price
-// 	}
+	updateProduct.Status = "inactive"
 
-// 	if request.Image != "" {
-// 		product.Image = request.Image
-// 	}
+	productUpdated, err := h.ProductRepository.UpdateProduct(updateProduct)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{
+			Status:  "error",
+			Message: err.Error(),
+		})
+	}
 
-// 	if request.Qty != 0 {
-// 		product.Qty = request.Qty
-// 	}
-
-// 	if len(request.CategoryID) == 0 {
-// 		data, err := h.ProductRepository.DeleteProductCategoryByProductId(product)
-// 		if err != nil {
-// 			return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Status: "error", Message: err.Error()})
-// 		}
-
-// 		return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: data})
-// 	}
-
-// 	categories, _ := h.ProductRepository.FindCategoriesById(request.CategoryID)
-// 	product.Category = categories
-
-// 	data, err := h.ProductRepository.UpdateProduct(product)
-// 	if err != nil {
-// 		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Status: "error", Message: err.Error()})
-// 	}
-
-// 	return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: data})
-// }
-
-// func (h *handlerProduct) DeleteProduct(c echo.Context) error {
-// 	id, _ := strconv.Atoi(c.Param("id"))
-
-// 	product, err := h.ProductRepository.GetProduct(id)
-// 	if err != nil {
-// 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
-// 	}
-
-// 	data, err := h.ProductRepository.DeleteProduct(product, id)
-// 	if err != nil {
-// 		return c.JSON(http.StatusInternalServerError, dto.ErrorResult{Status: "error", Message: err.Error()})
-// 	}
-
-// 	return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: data})
-// }
-
+	response := dto.SuccessResult{
+		Status: "success",
+		Data:   fmt.Sprintf("Product dengan id %d berhasil di non-aktifkan", productUpdated.ID),
+	}
+	return c.JSON(http.StatusOK, response)
+}
 func convertMultipleProductResponse(products []models.Product) []dto.ProductResponse {
 	var productsResponse []dto.ProductResponse
 

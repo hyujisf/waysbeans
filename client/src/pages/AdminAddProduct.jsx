@@ -1,15 +1,14 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useMutation } from "react-query";
-import { Button, Label, TextInput } from "flowbite-react";
+import { Button } from "flowbite-react";
 import { API } from "@/lib/api";
-import { useQuery } from "react-query";
 
 import Toast from "@/lib/alert";
 import Layout from "@/layouts/Default";
 
 const AdminAddProduct = () => {
+	let navigate = useNavigate();
 	const [preview, setPreview] = useState(null);
 	const [inputProduct, setInputProduct] = useState({
 		name: "",
@@ -34,9 +33,8 @@ const AdminAddProduct = () => {
 		}
 	};
 	const handleSubmit = useMutation(async (e) => {
+		e.preventDefault();
 		try {
-			e.preventDefault();
-
 			// Configuration
 			const config = {
 				headers: {
@@ -52,19 +50,22 @@ const AdminAddProduct = () => {
 
 			await API.post("/product", data, config);
 
-			e.target.reset();
-			setPreview(null);
-			Toast.fire({
-				icon: "success",
-				title: "Product success to add",
-			});
-			// redirect("/");
+			// e.target.reset();
+			// setPreview(null);
+			if (response.data.status === "success") {
+				navigate("/product_list");
+				Toast.fire({
+					icon: "success",
+					title: "Product success to add",
+				});
+				redirect("/product_list");
+			}
 		} catch (err) {
 			// console.log(form.amenities);
 
 			Toast.fire({
-				icon: "error",
-				title: "Product fail to add",
+				icon: "warning",
+				title: "Product sudah ada, Aktif",
 			});
 		}
 	});
@@ -118,7 +119,7 @@ const AdminAddProduct = () => {
 								<div>
 									<textarea
 										name='description'
-										placeholder='Description Product'
+										placeholder='Description'
 										onChange={handleChange}
 										required
 										rows={5}
@@ -134,22 +135,41 @@ const AdminAddProduct = () => {
 										className='w-full rounded-lg bg-coffee-400/25 placeholder:text-coffee-300 text-coffee-400 border-2 border-coffee-400 cursor-text file:hidden px-3 py-2'
 									/>
 								</div>
-								<Button
-									type='submit'
-									size={"lg"}
-									className='bg-coffee-400 hover:bg-transparent border-2 !border-coffee-400 text-white hover:text-coffee-400 px-4 py-0 font-semibold transition-all !w-full'
-								>
-									Add Cart
-								</Button>
+								{handleSubmit.isLoading ? (
+									<Button
+										type='submit'
+										size={"lg"}
+										className='bg-coffee-400 hover:!bg-coffee-400 border-2 !border-coffee-400 text-white py-0 font-semibold transition-all !w-full'
+										disabled
+									>
+										Adding Product...
+									</Button>
+								) : (
+									<Button
+										type='submit'
+										size={"lg"}
+										className='bg-coffee-400 hover:bg-transparent border-2 !border-coffee-400 text-white hover:text-coffee-400 px-4 py-0 font-semibold transition-all !w-full'
+									>
+										Add Cart
+									</Button>
+								)}
 							</form>
 						</div>
 						<div className='lg:w-[46rem]'>
-							{preview && (
+							{preview != null ? (
 								<img
 									src={preview}
 									className={"object-cover object-center h-full w-full"}
 									alt={preview}
 								/>
+							) : (
+								<div className='flex h-full items-center justify-center border-2 border-coffee-300'>
+									<img
+										src={"/coffee.svg"}
+										className={"h-40 opacity-10"}
+										alt='default image'
+									/>
+								</div>
 							)}
 						</div>
 					</div>
