@@ -125,7 +125,7 @@ const CartProduct = () => {
 				alert("you closed the popup without finishing the payment");
 			},
 		});
-		await API.patch("/cart", body, config);
+		await API.patch("/order", body, config);
 	});
 
 	const title = "Cart";
@@ -196,6 +196,7 @@ const CartProduct = () => {
 								<div className='flex justify-end'>
 									<Button
 										type='button'
+										onClick={(e) => handleSubmit.mutate(e)}
 										className='bg-coffee-400 hover:bg-transparent border-2 !border-coffee-400 text-white hover:text-coffee-400 px-20 py-0 font-semibold transition-all md:w-auto text-right'
 									>
 										Pay
