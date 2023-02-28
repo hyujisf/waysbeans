@@ -18,8 +18,16 @@ if (localStorage.token) {
 export default function Layouts(props) {
 	const [loginModal, setLoginModal] = useState(false);
 	const [registerModal, setRegisterModal] = useState(false);
+	const [cart, setCart] = useState([]);
 	const [state, dispatch] = useContext(AppContext);
 
+	useEffect(() => {
+		API.get("/orders-id")
+			.then((res) => {
+				setCart(res.data.data);
+			})
+			.catch((err) => console.log("error", err));
+	});
 	const navigate = useNavigate();
 
 	const isLogout = () => {
@@ -55,7 +63,14 @@ export default function Layouts(props) {
 										to={"/cart"}
 										className='rounded-full hover:bg-coffee-100 p-3 transition-all duration-200'
 									>
-										<img src='/img/basket.svg' width={25} alt='' />
+										<div className='relative'>
+											<img src='/img/basket.svg' width={30} alt='' />
+											{cart.length > 0 ? (
+												<span className='absolute top-0 -right-1 px-1.5 rounded-full bg-red-600 text-[0.65rem] text-white'>
+													{cart.length}
+												</span>
+											) : null}
+										</div>
 									</Link>
 								) : null}
 								<Dropdown
