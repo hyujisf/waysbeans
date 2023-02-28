@@ -21,7 +21,7 @@ const Detail = () => {
 				const response = await API.get(`/product/${id}`);
 				return response.data.data;
 			} catch (e) {
-				console.log(e);
+				// console.log(e);
 			}
 		}
 	);
@@ -43,7 +43,13 @@ const Detail = () => {
 			await API.post("/order", body, config);
 			navigate("/cart");
 		} catch (error) {
-			console.log(error);
+			// console.log(error);
+			if (state.isLogin !== true) {
+				Toast.fire({
+					icon: "error",
+					title: "Please Login First!",
+				});
+			}
 		}
 	});
 

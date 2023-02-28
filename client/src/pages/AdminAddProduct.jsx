@@ -49,23 +49,20 @@ const AdminAddProduct = () => {
 			data.append("image", inputProduct.image[0]);
 
 			await API.post("/product", data, config);
+			// console.log(response);
 
-			// e.target.reset();
-			// setPreview(null);
-			if (response.data.status === "success") {
-				navigate("/product_list");
-				Toast.fire({
-					icon: "success",
-					title: "Product success to add",
-				});
-				redirect("/product_list");
-			}
+			navigate("/product_list");
+
+			Toast.fire({
+				icon: "success",
+				title: "Product success to add",
+			});
 		} catch (err) {
 			// console.log(form.amenities);
 
 			Toast.fire({
 				icon: "warning",
-				title: "Product sudah ada, Aktif",
+				title: "Product sudah ada",
 			});
 		}
 	});

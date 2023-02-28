@@ -51,7 +51,7 @@ export default function Layouts(props) {
 			}
 		});
 	};
-	// console.log(state.user?.image);
+	console.log(state.user?.image);
 	return (
 		<>
 			<div>

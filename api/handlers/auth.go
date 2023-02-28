@@ -104,6 +104,7 @@ func (h *handlerAuth) Login(c echo.Context) error {
 		Name:  userLogin.Name,
 		Email: userLogin.Email,
 		Role:  userLogin.Role,
+		Image: userLogin.Image,
 		Token: token,
 	}
 
