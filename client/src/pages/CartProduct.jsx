@@ -19,8 +19,9 @@ const CartProduct = () => {
 
 	//subtotal
 	let resultTotal = cart?.reduce((x, y) => {
-		return x + y.qty * y.subtotal;
+		return x + y.qty * y.product.price;
 	}, 0);
+	console.log(resultTotal);
 
 	//qty
 	let resultQty = cart?.reduce((x, y) => {
@@ -128,6 +129,8 @@ const CartProduct = () => {
 		await API.patch("/order", body, config);
 	});
 
+	console.log(cart);
+
 	const title = "Cart";
 	document.title = "WaysBeans | " + title;
 	return (
@@ -188,9 +191,7 @@ const CartProduct = () => {
 									</tr>
 									<tr className='border-t border-x-0 border-t-coffee-400 text-coffee-250 font-semibold'>
 										<td>Total</td>
-										<td className='text-right'>
-											{toCurrency(item?.qty * item?.product?.price)}
-										</td>
+										<td className='text-right'>{toCurrency(resultTotal)}</td>
 									</tr>
 								</table>
 								<div className='flex justify-end'>
