@@ -43,6 +43,7 @@ func (h *handlerOrder) GetOrder(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: order})
 }
+
 func (h *handlerOrder) CreateOrder(c echo.Context) error {
 	userLogin := c.Get("userLogin").(jwt.MapClaims)
 	id := int(userLogin["id"].(float64))
@@ -55,6 +56,9 @@ func (h *handlerOrder) CreateOrder(c echo.Context) error {
 	validate := validator.New()
 	err := validate.Struct(request)
 	if err != nil {
+		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
+	}
+	if _, err := h.OrderRepository.FindProductID([]int{request.ProductID}); err == nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
 	}
 
@@ -140,6 +144,8 @@ func (h *handlerOrder) DeleteOrder(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, dto.SuccessResult{Status: "success", Data: data})
 }
+
+// Get Order by ID user
 func (h *handlerOrder) FindOrdersByID(c echo.Context) error {
 	userLogin := c.Get("userLogin").(jwt.MapClaims)
 	id := int(userLogin["id"].(float64))
