@@ -51,6 +51,7 @@ export default function Layouts(props) {
 			}
 		});
 	};
+	// console.log(state.user?.image);
 	return (
 		<>
 			<div>
@@ -66,7 +67,7 @@ export default function Layouts(props) {
 										<div className='relative'>
 											<img src='/img/basket.svg' width={30} alt='' />
 											{cart.length > 0 ? (
-												<span className='absolute top-0 -right-1 px-1.5 rounded-full bg-red-600 text-[0.65rem] text-white'>
+												<span className='absolute top-0 -right-1 px-2 rounded-full bg-red-600 text-[0.65rem] text-white'>
 													{cart.length}
 												</span>
 											) : null}

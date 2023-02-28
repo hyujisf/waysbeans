@@ -196,7 +196,7 @@ const CartProduct = () => {
 								</table>
 								<div className='flex justify-end'>
 									<Button
-										type='button'
+										type='submit'
 										onClick={(e) => handleSubmit.mutate(e)}
 										className='bg-coffee-400 hover:bg-transparent border-2 !border-coffee-400 text-white hover:text-coffee-400 px-20 py-0 font-semibold transition-all md:w-auto text-right'
 									>

@@ -1,9 +1,19 @@
 import React from "react";
 import { Table } from "flowbite-react";
+import { useQuery } from "react-query";
+import { API } from "@/lib/api";
 
 import Layout from "@/layouts/Default";
+import { toCurrency } from "@/lib/currency";
 
 const AdminDashboard = () => {
+	let { data: transactions, refetch } = useQuery(
+		"transactionsCache",
+		async () => {
+			const response = await API.get("/transactions");
+			return response.data.data;
+		}
+	);
 	const title = "Dashboard";
 	document.title = "WaysBeans | " + title;
 	return (
@@ -18,101 +28,43 @@ const AdminDashboard = () => {
 							<Table.Head>
 								<Table.HeadCell className='bg-gray-200'>No</Table.HeadCell>
 								<Table.HeadCell className='bg-gray-200'>
-									Product name
+									Customer Name
 								</Table.HeadCell>
-								<Table.HeadCell className='bg-gray-200'>Color</Table.HeadCell>
 								<Table.HeadCell className='bg-gray-200'>
-									Category
+									Transaction ID
 								</Table.HeadCell>
 								<Table.HeadCell className='bg-gray-200'>Price</Table.HeadCell>
 								<Table.HeadCell className='bg-gray-200'>Status</Table.HeadCell>
 							</Table.Head>
 							<Table.Body className='divide-y'>
-								<Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>
-									<Table.Cell className='w-8'>1</Table.Cell>
-									<Table.Cell className='whitespace-nowrap font-medium text-gray-900 w-full'>
-										Apple MacBook Pro 17"
-									</Table.Cell>
-									<Table.Cell>Sliver</Table.Cell>
-									<Table.Cell>Laptop</Table.Cell>
-									<Table.Cell>$2999</Table.Cell>
-									<Table.Cell>
-										<a
-											href='/tables'
-											className='font-medium text-blue-600 hover:underline dark:text-blue-500'
+								{transactions?.map((item, index) => (
+									<Table.Row
+										key={index}
+										className='bg-white dark:border-gray-700 dark:bg-gray-800'
+									>
+										<Table.Cell className='w-8'>{index + 1}</Table.Cell>
+										<Table.Cell className='whitespace-nowrap font-medium text-gray-900'>
+											{item.user.name}
+										</Table.Cell>
+										<Table.Cell>{item.id}</Table.Cell>
+										<Table.Cell>{toCurrency(item?.total)}</Table.Cell>
+										<Table.Cell
+											className={`font-medium capitalize ${
+												item.status === "success"
+													? "text-lime-400"
+													: item.status === "failed"
+													? "text-red-600"
+													: item.status === "pending"
+													? "text-amber-400"
+													: item.status === "On the way"
+													? "text-cyan-400"
+													: ""
+											}`}
 										>
-											Edit
-										</a>
-									</Table.Cell>
-								</Table.Row>
-								<Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>
-									<Table.Cell className='w-8'>1</Table.Cell>
-									<Table.Cell className='whitespace-nowrap font-medium text-gray-900 w-full'>
-										Microsoft Surface Pro
-									</Table.Cell>
-									<Table.Cell>White</Table.Cell>
-									<Table.Cell>Laptop PC</Table.Cell>
-									<Table.Cell>$1999</Table.Cell>
-									<Table.Cell>
-										<a
-											href='/tables'
-											className='font-medium text-blue-600 hover:underline dark:text-blue-500'
-										>
-											Edit
-										</a>
-									</Table.Cell>
-								</Table.Row>
-								<Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>
-									<Table.Cell className='w-8'>1</Table.Cell>
-									<Table.Cell className='whitespace-nowrap font-medium text-gray-900 w-full'>
-										Magic Mouse 2
-									</Table.Cell>
-									<Table.Cell>Black</Table.Cell>
-									<Table.Cell>Accessories</Table.Cell>
-									<Table.Cell>$99</Table.Cell>
-									<Table.Cell>
-										<a
-											href='/tables'
-											className='font-medium text-blue-600 hover:underline dark:text-blue-500'
-										>
-											Edit
-										</a>
-									</Table.Cell>
-								</Table.Row>
-								<Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>
-									<Table.Cell className='w-8'>1</Table.Cell>
-									<Table.Cell className='whitespace-nowrap font-medium text-gray-900 w-full'>
-										Google Pixel Phone
-									</Table.Cell>
-									<Table.Cell>Gray</Table.Cell>
-									<Table.Cell>Phone</Table.Cell>
-									<Table.Cell>$799</Table.Cell>
-									<Table.Cell>
-										<a
-											href='/tables'
-											className='font-medium text-blue-600 hover:underline dark:text-blue-500'
-										>
-											Edit
-										</a>
-									</Table.Cell>
-								</Table.Row>
-								<Table.Row className='bg-white dark:border-gray-700 dark:bg-gray-800'>
-									<Table.Cell className='w-8'>1</Table.Cell>
-									<Table.Cell className='whitespace-nowrap font-medium text-gray-900 w-full'>
-										Apple Watch 5
-									</Table.Cell>
-									<Table.Cell>Red</Table.Cell>
-									<Table.Cell>Wearables</Table.Cell>
-									<Table.Cell>$999</Table.Cell>
-									<Table.Cell>
-										<a
-											href='/tables'
-											className='font-medium text-blue-600 hover:underline dark:text-blue-500'
-										>
-											Edit
-										</a>
-									</Table.Cell>
-								</Table.Row>
+											{item.status}
+										</Table.Cell>
+									</Table.Row>
+								))}
 							</Table.Body>
 						</Table>
 					</div>
