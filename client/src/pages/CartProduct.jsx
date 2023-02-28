@@ -208,11 +208,7 @@ const CartProduct = () => {
 					))
 				) : (
 					<div className='text-center'>
-						<img
-							src={imageTrans}
-							className='img-fluid'
-							style={{ width: "40%" }}
-						/>
+						<img src={""} className='img-fluid' style={{ width: "40%" }} />
 						<div className='text-primer fw-bold'>
 							No data Cart, let's Shopping
 						</div>
