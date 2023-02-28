@@ -122,6 +122,7 @@ func (h *handlerAuth) CheckAuth(c echo.Context) error {
 		Name:  claims["name"].(string),
 		Email: claims["email"].(string),
 		Role:  claims["role"].(string),
+		Image: claims["image"].(string),
 		Token: strings.Replace(c.Request().Header.Get("Authorization"), "Bearer ", "", 1),
 	}
 
