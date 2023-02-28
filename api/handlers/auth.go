@@ -88,6 +88,7 @@ func (h *handlerAuth) Login(c echo.Context) error {
 	claims["name"] = userLogin.Name
 	claims["email"] = userLogin.Email
 	claims["role"] = userLogin.Role
+	claims["image"] = userLogin.Image
 	claims["exp"] = time.Now().Add(time.Hour * 8).Unix() // 2 hours expired
 
 	// menggenerate token jwt
