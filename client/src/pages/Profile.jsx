@@ -75,7 +75,7 @@ const Profile = () => {
 										<div key={k} className='bg-coffee-100 p-4'>
 											<div className='flex w-full gap-4'>
 												{items?.product?.map((data, idx) => (
-													<div className='flex w-full' key={idx}>
+													<div className='flex w-full gap-4' key={idx}>
 														<div>
 															<img
 																src={data?.product?.image}

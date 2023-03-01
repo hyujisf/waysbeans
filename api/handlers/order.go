@@ -58,9 +58,9 @@ func (h *handlerOrder) CreateOrder(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
 	}
-	if _, err := h.OrderRepository.FindProductID([]int{request.ProductID}); err == nil {
-		return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
-	}
+	// if _, err := h.OrderRepository.FindProductID([]int{request.ProductID}); err == nil {
+	// 	return c.JSON(http.StatusBadRequest, dto.ErrorResult{Status: "error", Message: err.Error()})
+	// }
 
 	order := models.Order{
 		ProductID: request.ProductID,
