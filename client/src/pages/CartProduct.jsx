@@ -148,7 +148,7 @@ const CartProduct = () => {
 										<td className='w-[4.5rem]'>
 											<div className='w-full'>
 												<img
-													src={"/uploads/product1.png"}
+													src={item?.product.image}
 													className='h-full'
 													alt=''
 												/>
