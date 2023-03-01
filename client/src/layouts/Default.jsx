@@ -3,7 +3,6 @@ import Header from "@/components/Header";
 import { Navbar, Dropdown, Avatar, Button } from "flowbite-react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { useQuery } from "react-query";
 import { AppContext } from "@/context/AppContext";
 import { API } from "@/lib/api";
 import { setAuthToken } from "@/lib/api";
